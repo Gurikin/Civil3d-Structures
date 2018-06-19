@@ -74,10 +74,7 @@ namespace PipeData {
                 
                 Dictionary<string, char> dictPipe = new Dictionary<string, char>(); // track data parts column
 
-                Ed.PromptEntityOptions opt = new Ed.PromptEntityOptions("\nSelect an Alignment");
-                opt.SetRejectMessage("\nObject must be an alignment.\n");
-                opt.AddAllowedClass(typeof(CivDb.Alignment), false);
-                Db.ObjectId alignID = ed.GetEntity(opt).ObjectId;
+                
 
                 try {
                     Db.ObjectId oNetworkId = doc.GetPipeNetworkIds()[0];
@@ -172,12 +169,17 @@ namespace PipeData {
 
                     // Now export the structures
 
+					
+					Ed.PromptEntityOptions opt = new Ed.PromptEntityOptions("\nSelect an Structure");
+					opt.SetRejectMessage("\nObject must be an structure.\n");
+					opt.AddAllowedClass(typeof(CivDb.Structure), false);
+					Db.ObjectId structureID = ed.GetEntity(opt).ObjectId;
                     Dictionary<string, char> dictStructures = new Dictionary<string, char>(); // track data parts column
                     
                     // Get structures:
                     Db.ObjectIdCollection oStructureIds = oNetwork.GetStructureIds();
-                    foreach ( Db.ObjectId oid in oStructureIds ) {
-                        CivDb.Structure oStructure = ts.GetObject(oid, Db.OpenMode.ForRead) as CivDb.Structure;
+                    
+                        CivDb.Structure oStructure = ts.GetObject(structureID, Db.OpenMode.ForRead) as CivDb.Structure;
                         //col = 'B';
                         //row++;
                         //aRange = xlWsStructures.get_Range("" + col + row, System.Type.Missing);
@@ -198,7 +200,7 @@ namespace PipeData {
                             //aRange = aRange = xlWsStructures.get_Range("" + iColumnStructure + row, System.Type.Missing);
                             //aRange.Value2 = oPartDataField.Value;
                         }
-                    }
+                    
 
                 } catch ( Autodesk.AutoCAD.Runtime.Exception ex ) {
                     ed.WriteMessage("PipeSample: " + ex.Message);
