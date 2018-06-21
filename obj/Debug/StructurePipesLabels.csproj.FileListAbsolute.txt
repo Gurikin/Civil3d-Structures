@@ -1,0 +1,4 @@
+D:\1. Harry\999. Personal\5. Developing\1. Studio projects\PipeDataExcel\bin\Debug\PipeDemo.dll
+D:\1. Harry\999. Personal\5. Developing\1. Studio projects\PipeDataExcel\bin\Debug\PipeDemo.pdb
+D:\1. Harry\999. Personal\5. Developing\1. Studio projects\PipeDataExcel\obj\Debug\PipeDemo.dll
+D:\1. Harry\999. Personal\5. Developing\1. Studio projects\PipeDataExcel\obj\Debug\PipeDemo.pdb

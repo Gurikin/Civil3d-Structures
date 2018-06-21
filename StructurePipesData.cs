@@ -1,22 +1,4 @@
-﻿// Copyright 2009-2010 by Autodesk, Inc.
-//
-//Permission to use, copy, modify, and distribute this software in
-//object code form for any purpose and without fee is hereby granted, 
-//provided that the above copyright notice appears in all copies and 
-//that both that copyright notice and the limited warranty and
-//restricted rights notice below appear in all supporting 
-//documentation.
-//
-//AUTODESK PROVIDES THIS PROGRAM "AS IS" AND WITH ALL FAULTS. 
-//AUTODESK SPECIFICALLY DISCLAIMS ANY IMPLIED WARRANTY OF
-//MERCHANTABILITY OR FITNESS FOR A PARTICULAR USE.  AUTODESK, INC. 
-//DOES NOT WARRANT THAT THE OPERATION OF THE PROGRAM WILL BE
-//UNINTERRUPTED OR ERROR FREE.
-//
-//Use, duplication, or disclosure by the U.S. Government is subject to 
-//restrictions set forth in FAR 52.227-19 (Commercial Computer
-//Software - Restricted Rights) and DFAR 252.227-7013(c)(1)(ii)
-//(Rights in Technical Data and Computer Software), as applicable.
+﻿// Copyright BIV
 
 using System;
 using System.Collections.Generic;
@@ -50,20 +32,15 @@ namespace PipeData {
     /// </summary>
 
     public class StucturePipes : Rt.IExtensionApplication {
-        private static Microsoft.Office.Interop.Excel.Application xlApp=null;
-        private static Workbook xlWb = null;
-        private static Worksheet xlWsStructures=null;
-        private static Worksheet xlWsPipes=null;
-
-
+        
         [Rt.CommandMethod("StructurePipesLabels")]
         public void StructurePipesLabels() {
             Ed.Editor ed = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument.Editor;
-            Civ.CivilDocument doc = Autodesk.Civil.ApplicationServices.CivilApplication.ActiveDocument;
+            Civ.CivilDocument civDoc = Autodesk.Civil.ApplicationServices.CivilApplication.ActiveDocument;
             // Document AcadDoc = Autodesk.AutoCAD.ApplicationServices.Application.DocumentManager.MdiActiveDocument;
 
             // Check that there's a pipe network to parse
-            if ( doc.GetPipeNetworkIds() == null ) {
+            if ( civDoc.GetPipeNetworkIds() == null ) {
                 ed.WriteMessage("There are no pipe networks to export.  Open a document that contains at least one pipe network");
                 return;
             }
@@ -74,14 +51,15 @@ namespace PipeData {
                 
                 Dictionary<string, char> dictPipe = new Dictionary<string, char>(); // track data parts column
 
-                Ed.PromptEntityOptions opt = new Ed.PromptEntityOptions("\nSelect an Alignment");
-                opt.SetRejectMessage("\nObject must be an alignment.\n");
-                opt.AddAllowedClass(typeof(CivDb.Alignment), false);
-                Db.ObjectId alignID = ed.GetEntity(opt).ObjectId;
+                Ed.PromptEntityOptions opt = new Ed.PromptEntityOptions("\nSelect an Structure");
+                opt.SetRejectMessage("\nObject must be an Structure.\n");
+                opt.AddAllowedClass(typeof(CivDb.Structure), false);
+                Db.ObjectId structureID = ed.GetEntity(opt).ObjectId;
 
                 try {
-                    Db.ObjectId oNetworkId = doc.GetPipeNetworkIds()[0];
-                    CivDb.Network oNetwork = ts.GetObject(oNetworkId, Db.OpenMode.ForWrite) as CivDb.Network;
+                    
+                    //////Db.ObjectId oNetworkId = civDoc.GetPipeNetworkIds()[0];
+                    //////CivDb.Network oNetwork = ts.GetObject(oNetworkId, Db.OpenMode.ForWrite) as CivDb.Network;
 
                     //// Get pipes:
                     //ObjectIdCollection oPipeIds = oNetwork.GetPipeIds();
@@ -175,9 +153,19 @@ namespace PipeData {
                     Dictionary<string, char> dictStructures = new Dictionary<string, char>(); // track data parts column
                     
                     // Get structures:
-                    Db.ObjectIdCollection oStructureIds = oNetwork.GetStructureIds();
-                    foreach ( Db.ObjectId oid in oStructureIds ) {
-                        CivDb.Structure oStructure = ts.GetObject(oid, Db.OpenMode.ForRead) as CivDb.Structure;
+
+                    //Db.ObjectIdCollection oStructureIds = oNetwork.GetStructureIds();
+                    //foreach ( Db.ObjectId oid in structureID ) {
+                    CivDb.Structure oStructure = ts.GetObject(structureID, Db.OpenMode.ForRead) as CivDb.Structure;
+                    CivDb.Network oNetwork = ts.GetObject(oStructure.NetworkId, Db.OpenMode.ForWrite) as CivDb.Network;
+                    string[] connPipeNames = oStructure.GetConnectedPipeNames();
+                    PipeData.BIVPipe pipe = new PipeData.BIVPipe();
+                    List<Db.ObjectId> pipeIds = pipe.GetPipeIdByName(connPipeNames);
+                    ed.WriteMessage("\nК колодцу присоеденены следующие трубы: ");
+                    foreach (Db.ObjectId pipeId in pipeIds) {
+                        CivDb.Pipe oPipe = ts.GetObject(pipeId, Db.OpenMode.ForRead) as CivDb.Pipe;
+                        ed.WriteMessage("{0} | {1:0.000}   |||   ", oPipe.Name, oStructure.get_PipeCenterDepth(new int()));                        
+                    }
                         //col = 'B';
                         //row++;
                         //aRange = xlWsStructures.get_Range("" + col + row, System.Type.Missing);
@@ -185,26 +173,26 @@ namespace PipeData {
                         //aRange = xlWsStructures.get_Range("" + ++col + row, System.Type.Missing);
                         //aRange.Value2 = oStructure.Position.X + "," + oStructure.Position.Y + "," + oStructure.Position.Z;
 
-                        foreach ( CivDb.PartDataField oPartDataField in oStructure.PartData.GetAllDataFields() ) {
-                            // Make sure the data has a column in Excel, if not, add the column
-                            if ( !dictStructures.ContainsKey(oPartDataField.ContextString) ) {
-                                char nextCol = ( char )( ( int )'D' + dictStructures.Count );
-                                //aRange = xlWsStructures.get_Range("" + nextCol + "1", System.Type.Missing);
-                                //aRange.Value2 = oPartDataField.ContextString;
-                                dictStructures.Add(oPartDataField.ContextString, nextCol);
+                        //foreach ( CivDb.PartDataField oPartDataField in oStructure.PartData.GetAllDataFields() ) {
+                        //    // Make sure the data has a column in Excel, if not, add the column
+                        //    if ( !dictStructures.ContainsKey(oPartDataField.ContextString) ) {
+                        //        char nextCol = ( char )( ( int )'D' + dictStructures.Count );
+                        //        //aRange = xlWsStructures.get_Range("" + nextCol + "1", System.Type.Missing);
+                        //        //aRange.Value2 = oPartDataField.ContextString;
+                        //        dictStructures.Add(oPartDataField.ContextString, nextCol);
 
-                            }
-                            char iColumnStructure = dictStructures[oPartDataField.ContextString];
-                            //aRange = aRange = xlWsStructures.get_Range("" + iColumnStructure + row, System.Type.Missing);
-                            //aRange.Value2 = oPartDataField.Value;
-                        }
-                    }
+                        //    }
+                        //    char iColumnStructure = dictStructures[oPartDataField.ContextString];
+                        //ed.WriteMessage("\npartDataField.Name: " + oPartDataField.Name + "   ===   ColumnStructure to string: " + iColumnStructure + "   ===   PartDataField.Value: " + oPartDataField.Value.ToString() + "\n");
+                        //    //aRange = aRange = xlWsStructures.get_Range("" + iColumnStructure + row, System.Type.Missing);
+                        //    //aRange.Value2 = oPartDataField.Value;
+                        //}
+                    //}
 
                 } catch ( Autodesk.AutoCAD.Runtime.Exception ex ) {
-                    ed.WriteMessage("PipeSample: " + ex.Message);
+                    ed.WriteMessage("StructurePipesData: " + ex.Message);
                     return;
                 }
-
             }
         }
 
@@ -216,24 +204,13 @@ namespace PipeData {
             // Clean up all our Excel COM objects    
             // This will close Excel without saving
 
-            if ( xlWb != null ) {
-                try {
-                    xlWb.Close(false, Type.Missing, Type.Missing);
-                    xlApp.Quit();
-                    Marshal.FinalReleaseComObject(xlWsStructures);
-                    Marshal.FinalReleaseComObject(xlWsPipes);
-                    Marshal.FinalReleaseComObject(xlWb);
-                    Marshal.FinalReleaseComObject(xlApp);
-
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-
-                } catch ( System.Exception e ) {
-                    Console.WriteLine(e.Message);
-                }
-            }            
+            try {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+            } catch ( System.Exception e ) {
+                Console.WriteLine(e.Message);
+            }
         }
-
         #endregion
     }
 }
